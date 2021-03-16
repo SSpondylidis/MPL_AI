@@ -110,10 +110,6 @@ roi_bmap[4] = roi[4]+100
 #### Tiles with litter: `r length(shp$Litter[shp$Litter==1])`
 #### Tiles without litter: `r length(shp$Litter[shp$Litter==0])`
 
-<!--\newpage
-
-
-<!--\eject \pdfpagewidth=297mm \pdfpageheight=210mm
 
 ### ___________________________________________________________
 # __Density Map - Tiles with litter per 100sqm__
@@ -157,11 +153,6 @@ tmap_save(dens_map,
           paste("E:\\Data_Spyros\\Project_GeoWiki_piles\\Maps_Reports\\dens_", name_dir,".png", sep = ""))
 
 ```
-<!--![](`r paste('E:\\Data_Spyros\\Project_GeoWiki_piles\\Maps_Reports\\dens_', name_dir,'.png', sep = '')`){width=9in}
-
-<!--\newpage
-
-<!--\eject \pdfpagewidth=297mm \pdfpageheight=210mm
 
 
 ### ___________________________________________________________
@@ -196,11 +187,7 @@ axis(side=1, at=seq(1, max(unique(dens$tiles_with[dens$tiles_with!=0]))))
 dev.off()
 
 ```
-<!--![](`r paste('E:\\Data_Spyros\\Project_GeoWiki_piles\\Maps_Reports\\hist_', name_dir,'.png', sep = '')`){width=9in}
 
-<!--\newpage
-
-<!--\eject \pdfpagewidth=297mm \pdfpageheight=210mm
 
 ### ___________________________________________________________
 # __Map of the resulting tiles__
@@ -243,9 +230,7 @@ tmap_save(new_map,
 
 
 ```
-<!--![](`r paste('E:\\Data_Spyros\\Project_GeoWiki_piles\\Maps_Reports\\tiles_', name_dir,'.png', sep = '')`){width=9in}
 
-<!--\newpage
 
 
 ### ___________________________________________________________
@@ -304,7 +289,7 @@ tmap_save(dot_map,
 
 
 ```
-<!--![](`r paste('E:\\Data_Spyros\\Project_GeoWiki_piles\\Maps_Reports\\Conf_', name_dir,'.png', sep = '')`){width=9in}
+
 
 
 
