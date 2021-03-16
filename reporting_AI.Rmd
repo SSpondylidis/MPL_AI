@@ -1,0 +1,344 @@
+---
+title: |
+    ![](mar-27.png){width=2in}  ![](MRSG_logo.jpg){width=1.9in}   
+    
+    
+    Report - Marine Litter Detection
+      
+author: 
+date: "`r format(Sys.Date(), '%d/%m/%Y')`"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+fontsize: 15pt
+---
+
+
+```{r setup, include=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+library(exifr)
+library(ggmap)
+library(raster)
+library(rgdal)
+library(sp)
+library(spatialEco)
+library(tmap)
+library(tmaptools)
+library(sf)
+library(spData)
+library(dplyr)
+
+dir_data = ("E:\\Data_Spyros\\Project_GeoWiki_piles\\N5_BEFORE_RAW")
+dir_maps = ("E:\\Data_Spyros\\Project_GeoWiki_piles\\Maps_Reports")
+sarea = "Xabelia, Lesvos"
+csv_results = "predVGG19.csv"
+date = "20/09/2020"
+name_dir = "20200929_Xabelia_512"
+dens_shp = "E:\\Data_Spyros\\Project_GeoWiki_piles\\20200929_Xabelia_512\\Outputs\\Shapefiles_v2\\xabelia_density_vgg19_paper_IGARSS_v3.shp"
+model = "VGG19"
+
+options(digits=10)
+
+setwd("E:\\Data_Spyros\\Project_GeoWiki_piles\\20200929_Xabelia_512\\Outputs")
+
+```
+
+
+```{r create the shapefile, echo=FALSE, warning=FALSE}
+# setwd(dir_data)
+# 
+files= list.files(path="E:\\Data_Spyros\\Project_GeoWiki_piles\\20200929_Xabelia_512\\tiles\\all", pattern="*.jpg", full.names=TRUE, recursive=TRUE) # list with all jpg files (user-defined input folder)
+exif_data = read_exif(files)
+# 
+# ex_df = data.frame("Filename" = exif_data$FileName, 
+#                    "Lat" = exif_data$GPSLatitude, 
+#                    "Lon" = exif_data$GPSLongitude)
+# 
+# results = read.csv(csv_results)
+# 
+# merged_moutz = merge(ex_df, results, by.x = "Filename", by.y = "filename")  
+# merged_moutz$Litter[merged_moutz$cname == "litter"] = TRUE
+# merged_moutz$Litter[merged_moutz$cname == "no_litter"] = FALSE
+# 
+# merged_moutz$Litter = as.logical(merged_moutz$Litter)
+# 
+# merged_moutz$Filename = paste(name_dir, merged_moutz$Filename, sep = "/")
+# 
+# WGScoor = merged_moutz
+# coordinates(WGScoor) = ~Lon+Lat
+# proj4string(WGScoor) = CRS("+proj=longlat +datum=WGS84")
+# LAEA_ccor = spTransform(WGScoor, CRS("+init=EPSG:3035") )
+# raster::shapefile(LAEA_ccor, paste(name_dir, "_report.shp", sep = ""), overwrite = T)
+
+```
+
+
+```{r, set rois, , echo=FALSE, warning=FALSE}
+setwd(dir_data)
+
+#shp = raster::shapefile(paste(name_dir, "_report.shp", sep = ""))
+shp = raster::shapefile("E:\\Data_Spyros\\Project_GeoWiki_piles\\N1_RAW\\Outputs\\Xabelia_points_centroids_VGG19_v3.shp")
+
+roi = st_bbox(shp)
+roi[1] = roi[1]-50
+roi[2] = roi[2]-50
+roi[3] = roi[3]+50
+roi[4] = roi[4]+50
+
+roi_bmap = st_bbox(shp)
+roi_bmap[1] = roi[1]-100
+roi_bmap[2] = roi[2]-100
+roi_bmap[3] = roi[3]+100
+roi_bmap[4] = roi[4]+100
+
+
+```
+
+
+
+### ___________________________________________________________
+# __Data information__
+#### Study Area: `r sarea`
+#### Number of images taken: 106
+#### Size of produced tiles: `r exif_data$ImageWidth[1]`x`r exif_data$ImageHeight[1]`
+#### Number of produced tiles: `r length(shp$Filename)`
+### ___________________________________________________________
+# __AI algorithm results__
+#### Model: `r model`
+#### Tiles with litter: `r length(shp$Litter[shp$Litter==1])`
+#### Tiles without litter: `r length(shp$Litter[shp$Litter==0])`
+
+\newpage
+
+
+\eject \pdfpagewidth=297mm \pdfpageheight=210mm
+
+### ___________________________________________________________
+# __Density Map - Tiles with litter per 100sqm__
+
+
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+setwd(dir_maps)
+
+dens = raster::shapefile(dens_shp)
+dens$tiles_with[dens$tiles_with==0]=NaN
+
+bmap = read_osm(roi_bmap, type = "bing")
+
+dens_map = tm_shape(bmap) + tm_rgb()
+dens_map = dens_map + 
+  tm_shape(dens, 
+           bbox = roi, 
+           is.master = T,
+           unit = "m") +
+  tm_fill(col = "tiles_with",
+          title = "Tiles with litter 
+  per 100sqm",
+          breaks = seq(1,
+                       ceiling(max(unique(dens$tiles_with), na.rm = T)) + ceiling(max(unique(dens$tiles_with), na.rm = T)/6),
+                       ceiling(max(unique(dens$tiles_with), na.rm = T)/6)), 
+          colorNA = NULL,
+          palette = "-inferno")+
+  tm_borders() +
+  tm_compass(north = -11.22,
+             type = "4star",
+             position = c("left", "top"),
+             size = 2) +
+  tm_scale_bar(breaks = c(0, 50, 100),
+               text.size = 1) +
+  tm_layout(legend.outside = T,
+            legend.text.size = 1,
+            legend.title.size = 1.5)
+
+tmap_save(dens_map,
+          paste("E:\\Data_Spyros\\Project_GeoWiki_piles\\Maps_Reports\\dens_", name_dir,".png", sep = ""))
+
+```
+![](`r paste('E:\\Data_Spyros\\Project_GeoWiki_piles\\Maps_Reports\\dens_', name_dir,'.png', sep = '')`){width=9in}
+
+\newpage
+
+\eject \pdfpagewidth=297mm \pdfpageheight=210mm
+
+
+### ___________________________________________________________
+# __Frequency Histogram of tiles with litter per 100sqm__
+```{r, echo=FALSE, warning=FALSE, fig.show='hide', message=F, results='hide', include=FALSE}
+#dens = raster::shapefile(paste("E:\\Data_Spyros\\Project_GeoWiki_piles\\Maps_Reports\\", dens_shp, sep = ""))
+dens = raster::shapefile(dens_shp)
+
+h = hist(dens$tiles_with[dens$tiles_with!=0],
+     breaks = seq(1, max(unique(dens$tiles_with[dens$tiles_with!=0]))),
+     xlim = c(1, max(unique(dens$tiles_with[dens$tiles_with!=0]))),
+     xlab = "Tiles with litter per 100sqm",
+     xaxt='n',
+     main = NULL,
+     col = "#7db8ff",
+     labels = T)
+
+png(file= paste("E:\\Data_Spyros\\Project_GeoWiki_piles\\Maps_Reports\\hist_", name_dir,".png", sep = ""),
+width=600, height=350)
+
+hist(dens$tiles_with[dens$tiles_with!=0],
+     breaks = seq(1, max(unique(dens$tiles_with[dens$tiles_with!=0]))),
+     xlim = c(1, max(unique(dens$tiles_with[dens$tiles_with!=0]))),
+     ylim = c(0, max(h$counts)+10),
+     xlab = "Tiles with litter per 100sqm",
+     xaxt='n',
+     main = NULL,
+     col = "#7db8ff",
+     labels = T)
+
+axis(side=1, at=seq(1, max(unique(dens$tiles_with[dens$tiles_with!=0]))))
+dev.off()
+
+```
+![](`r paste('E:\\Data_Spyros\\Project_GeoWiki_piles\\Maps_Reports\\hist_', name_dir,'.png', sep = '')`){width=9in}
+
+\newpage
+
+\eject \pdfpagewidth=297mm \pdfpageheight=210mm
+
+### ___________________________________________________________
+# __Map of the resulting tiles__
+
+```{r pressure, echo=FALSE, warning=FALSE, message=FALSE, results='hide', include=FALSE}
+bmap = read_osm(roi_bmap, type = "bing")
+
+#shp$tiles_with[shp$tiles_with == 0] = NaN
+
+new_map = tm_shape(bmap) + tm_rgb()
+new_map = new_map + 
+  tm_shape(shp, bbox = roi,
+           is.master = T,
+           unit = "m",
+           name = "Tiles") +
+  tm_dots(col = "cname_pred",
+          scale = 2,
+          breaks = c("no_litter", "litter"),
+          palette= c("red", "black"),
+          labels = c('litter', 'no litter'),
+          alpha = c(.7),
+          title = "Tiles",
+          legend.is.portrait = T,
+          legend.col.reverse = T,
+          legend.size.show = F,
+          legend.max.symbol.size = 3) + 
+  tm_compass(type = "4star",
+             position = c("left", "top"),
+             size = 2) +
+  tm_scale_bar(breaks = c(0, 50, 100),
+               text.size = 1) +
+  tm_layout(title.size = 2,
+            legend.outside = T,
+            legend.text.size = 1,
+            legend.title.size = 1.5)
+
+tmap_save(new_map,
+          paste("E:\\Data_Spyros\\Project_GeoWiki_piles\\Maps_Reports\\tiles_", name_dir,".png", sep = ""))
+
+
+
+```
+![](`r paste('E:\\Data_Spyros\\Project_GeoWiki_piles\\Maps_Reports\\tiles_', name_dir,'.png', sep = '')`){width=9in}
+
+\newpage
+
+
+### ___________________________________________________________
+# __AI algorithm confidence level for tiles that litter was detected__
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+new_shp = shp[shp$Litter==1,]
+new_shp$Confidence = new_shp$Confidence*10
+order_shp = new_shp[order(new_shp$Confidence, decreasing = F),]
+
+conf = as.data.frame(new_shp$Confidence)
+colnames(conf) = c("Confidence Level")
+conf$x = coordinates(new_shp)[,1]
+conf$y = coordinates(new_shp)[,2]
+
+df = arrange(conf, by = new_shp$Confidence)
+coordinates(df) = c('x','y')
+proj4string(df) = CRS("+init=EPSG:3035")
+
+
+tmap_mode("plot")
+dot_map = tm_shape(bmap) + tm_rgb()
+dot_map = dot_map + 
+  tm_shape(df, bbox = roi,
+           is.master = T,
+           unit = "m") +
+  tm_dots("Confidence Level",
+          breaks = seq(5, 10, by = 1),
+          size = 0.5,
+          palette = "Reds",
+          auto.palette.mapping = FALSE,
+          labels = c("0.5 to 0.6", "0.6 to 0.7", "0.7 to 0.8", "0.8 to 0.9", "0.9 to 1")) +
+          #c('#fee5d9', '#fcae91', '#fb6a4a', '#de2d26', '#a50f15'),
+          
+             # border.col = "black",
+             # border.lwd = 1,
+             # labels = c("0.5 to 0.6", "0.6 to 0.7", "0.7 to 0.8", "0.8 to 0.9", "0.9 to 1"),
+             # scale = 1,
+             # size.lim = c(5, 10),
+             # sizes.legend = seq(5, 9, by = 1),
+             # sizes.legend.labels = seq(0.5, 0.9, by = 0.1),
+             # legend.size.show = F,
+             # legend.col.reverse = F) + 
+  tm_compass(type = "4star",
+             position = c("left", "top"),
+             size = 2) +
+  tm_scale_bar(breaks = c(0, 50, 100),
+               text.size = 1) +
+  tm_layout(title.size = 2,
+            legend.outside = T,
+            legend.text.size = 1,
+            legend.title.size = 1.5)
+
+tmap_save(dot_map,
+          paste("E:\\Data_Spyros\\Project_GeoWiki_piles\\Maps_Reports\\Conf_", name_dir,".png", sep = ""))
+
+
+```
+![](`r paste('E:\\Data_Spyros\\Project_GeoWiki_piles\\Maps_Reports\\Conf_', name_dir,'.png', sep = '')`){width=9in}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
