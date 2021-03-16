@@ -49,8 +49,8 @@ setwd("E:\\Data_Spyros\\Project_GeoWiki_piles\\20200929_Xabelia_512\\Outputs")
 ```{r create the shapefile, echo=FALSE, warning=FALSE}
 # setwd(dir_data)
 # 
-files= list.files(path="E:\\Data_Spyros\\Project_GeoWiki_piles\\20200929_Xabelia_512\\tiles\\all", pattern="*.jpg", full.names=TRUE, recursive=TRUE) # list with all jpg files (user-defined input folder)
-exif_data = read_exif(files)
+# files= list.files(path="E:\\Data_Spyros\\Project_GeoWiki_piles\\20200929_Xabelia_512\\tiles\\all", pattern="*.jpg", full.names=TRUE, recursive=TRUE) # list with all jpg files # (user-defined input folder)
+# exif_data = read_exif(files)
 # 
 # ex_df = data.frame("Filename" = exif_data$FileName, 
 #                    "Lat" = exif_data$GPSLatitude, 
